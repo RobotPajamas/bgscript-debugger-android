@@ -4,10 +4,13 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
+import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.os.Handler;
+import android.util.Log;
 
 import com.robotpajamas.android.bgscriptdebugger.Blueteeth.Callback.ConnectionCallback;
 import com.robotpajamas.android.bgscriptdebugger.Blueteeth.Callback.ReadCallback;
@@ -15,6 +18,7 @@ import com.robotpajamas.android.bgscriptdebugger.Blueteeth.Callback.ScanCallback
 import com.robotpajamas.android.bgscriptdebugger.Blueteeth.Callback.ServicesDiscoveredCallback;
 import com.robotpajamas.android.bgscriptdebugger.Blueteeth.Callback.WriteCallback;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,6 +43,9 @@ public class BlueteethManager {
     private Queue<ServicesDiscoveredCallback> mServicesDiscoveredCallbackQueue = new LinkedList<>();
     private Queue<ReadCallback> mReadCallbackQueue = new LinkedList<>();
     private Queue<WriteCallback> mWriteCallbackQueue = new LinkedList<>();
+
+    // TODO: Figure out how to deal with notification callbacks which are persistent
+    private ReadCallback mNotifyCallback;
 
     private static BlueteethManager singleton = null;
     Context context;
@@ -115,15 +122,52 @@ public class BlueteethManager {
         reset();
     }
 
-    public void discoverServices(BlueteethDevice device, ServicesDiscoveredCallback callback) {
-        if (device.gatt != null) {
-            mServicesDiscoveredCallbackQueue.add(callback);
-            device.gatt.discoverServices();
+    // TODO: Temp, just to clear out my Android cache
+    private boolean refreshDeviceCache(BluetoothGatt gatt){
+        try {
+            Method localMethod = gatt.getClass().getMethod("refresh", new Class[0]);
+            if (localMethod != null) {
+                return (Boolean) localMethod.invoke(gatt);
+            }
         }
+        catch (Exception localException) {
+            Log.e("refreshDeviceCache", "An exception occured while refreshing device");
+        }
+        return false;
+    }
+
+    public void discoverServices(BlueteethDevice device, ServicesDiscoveredCallback callback) {
+        BluetoothGatt gatt = device.gatt;
+        if (gatt == null) {
+            return;
+        }
+
+        mServicesDiscoveredCallbackQueue.add(callback);
+//        refreshDeviceCache(gatt);
+        device.gatt.discoverServices();
     }
 
     public void reset() {
         mScannedDevices.clear();
+    }
+
+    public void notifyCharacteristic(UUID characteristic, UUID service, BlueteethDevice device, ReadCallback callback) {
+        BluetoothGatt gatt = device.gatt;
+        if (gatt == null) {
+            return;
+        }
+
+        Boolean enabled = callback != null;
+        mNotifyCallback = callback;
+
+        BluetoothGattCharacteristic gattCharacteristic = gatt.getService(service).getCharacteristic(characteristic);
+        gatt.setCharacteristicNotification(gattCharacteristic, enabled);
+        gattCharacteristic.getDescriptors();
+
+        final UUID CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
+        BluetoothGattDescriptor descriptor = gattCharacteristic.getDescriptor(CHARACTERISTIC_UPDATE_NOTIFICATION_DESCRIPTOR_UUID);
+        descriptor.setValue(enabled ? BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE : BluetoothGattDescriptor.DISABLE_NOTIFICATION_VALUE);
+        gatt.writeDescriptor(descriptor);
     }
 
     public void readCharacteristic(UUID characteristic, UUID service, BlueteethDevice device, ReadCallback callback) {
@@ -178,7 +222,6 @@ public class BlueteethManager {
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             super.onServicesDiscovered(gatt, status);
 
-
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 mServicesDiscoveredCallbackQueue.remove().call();
             }
@@ -196,6 +239,15 @@ public class BlueteethManager {
             super.onCharacteristicWrite(gatt, characteristic, status);
 
             mWriteCallbackQueue.remove().call();
+        }
+
+        @Override
+        public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic) {
+            super.onCharacteristicChanged(gatt, characteristic);
+
+            if (mNotifyCallback != null) {
+                mNotifyCallback.call(characteristic.getValue());
+            }
         }
     };
 

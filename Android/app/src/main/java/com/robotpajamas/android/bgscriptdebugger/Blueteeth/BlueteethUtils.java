@@ -18,4 +18,7 @@ public class BlueteethUtils {
         BlueteethManager.getInstance().readCharacteristic(characteristic, service, device, callback);
     }
 
+    public static void notifyData(UUID characteristic, UUID service, BlueteethDevice device, ReadCallback callback) {
+        BlueteethManager.getInstance().notifyCharacteristic(characteristic, service, device, callback);
+    }
 }

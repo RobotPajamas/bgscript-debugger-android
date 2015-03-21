@@ -9,7 +9,9 @@ import android.widget.TextView;
 import com.robotpajamas.android.bgscriptdebugger.Blueteeth.BlueteethDevice;
 import com.robotpajamas.android.bgscriptdebugger.Blueteeth.BlueteethManager;
 import com.robotpajamas.android.bgscriptdebugger.Blueteeth.BlueteethUtils;
+import com.robotpajamas.android.bgscriptdebugger.Blueteeth.Callback.ReadCallback;
 import com.robotpajamas.android.bgscriptdebugger.R;
+import com.robotpajamas.android.bgscriptdebugger.utils.StringUtils;
 
 import java.util.UUID;
 
@@ -38,11 +40,21 @@ public class DebuggerActivity extends ActionBarActivity {
     @InjectView(R.id.firmware_version)
     TextView mFirmwareVersion;
 
+    @InjectView(R.id.textview_debug)
+    TextView mDebugData;
+
     @InjectView(R.id.debugger_button)
     Button mUpdateButton;
 
     @OnClick(R.id.debugger_button)
     void onDebugClicked() {
+        BlueteethUtils.notifyData(DEBUGGER_CHAR, DEBUGGER_SERVICE, mDevice, new ReadCallback() {
+            @Override
+            public void call(byte[] data) {
+                String hexString = new String(data);
+                mDebugData.append(StringUtils.hexToString(hexString) + "\n");
+            }
+        });
     }
 
     @Override
@@ -51,16 +63,11 @@ public class DebuggerActivity extends ActionBarActivity {
         setContentView(R.layout.activity_debugger);
         ButterKnife.inject(this);
 
-
         mDevice = BlueteethManager.getInstance().connectedDevice;
         mDevice.discoverServices(() -> BlueteethUtils.readData(DEVICE_MANUFACTURER_FIRMWARE, DEVICE_SERVICE, mDevice, data -> mFirmwareVersion.setText(new String(data))));
 
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
 
-    }
 
 }
