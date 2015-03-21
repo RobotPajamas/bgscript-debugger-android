@@ -4,9 +4,9 @@
     <service uuid="1800">
       <description>Generic Access Profile</description>
 
-      <characteristic uuid="2a00">
-        <properties read="true" const="true" />
-        <value>Robot Pajamas</value>
+      <characteristic uuid="2a00" id="xgatt_device_name">
+        <properties read="true" const="false" />
+        <value>Robot Pajamas XXXX</value>
       </characteristic>
 
       <characteristic uuid="2a01">
@@ -29,6 +29,12 @@
             <properties read="true" const="true" />
             <value>RPJ-1</value>
         </characteristic>
+        
+        <characteristic uuid="2A25" id="xgatt_serial_number">
+			<description>Serial Number String</description>
+			<properties read="true" />
+			<value length="17" />
+		</characteristic>
 
         <characteristic uuid="2A27">
             <description>Hardware Revision String</description>
@@ -75,6 +81,15 @@
 
     </service>
     
+    <service uuid="deadbeef-cdcd-cdcd-cdcd-cdcdcdcdcdcd">
+        <description>Debugging Service</description>
+        <characteristic uuid="deadbeef-0000-0000-0000-000000000000" id="xgatt_debug">
+            <description>Debugging output</description>
+			<properties read="true" notify="true" />
+			<value length="20" />
+		</characteristic>
+    </service>
+    
     <service uuid="00766963-6172-6173-6f6c-7574696f6e73">
 	    <description>Device Control</description>
         <characteristic uuid="01766963-6172-6173-6f6c-7574696f6e73" id="device_reset">
@@ -83,13 +98,5 @@
 			<value length="1" />
 		</characteristic>
 	</service>
-
-    <service uuid="DEADBEEF-CDCD-CDCD-CDCD-CDCDCDCDCDCD">
-        <characteristic uuid="DEADBEEF-0000-0000-0000-000000000000" id="xgatt_debug">
-            <description>Debugging output</description>
-			<properties read="true" notify="true" />
-			<value length="20" />
-		</characteristic>
-    </service>
     
 </configuration>
