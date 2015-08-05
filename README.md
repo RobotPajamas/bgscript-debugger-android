@@ -1,6 +1,8 @@
 # bgscript-debugger-android
 Android app and associated firmware to assist with debugging bgscript
 
+Please refer to http://www.sureshjoshi.com/development/summer-of-bluegiga-code/
+
 License
 -------
 
