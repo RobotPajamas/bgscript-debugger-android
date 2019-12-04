@@ -1,4 +1,7 @@
 # bgscript-debugger-android
+
+## This project is no longer maintained as the BLE113 is a "legacy" product for Silicon Labs
+
 Android app and associated firmware to assist with debugging bgscript
 
 Please refer to http://www.sureshjoshi.com/development/summer-of-bluegiga-code/
